@@ -13,7 +13,12 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
+					<Add directory="/usr/include" />
 				</Compiler>
+				<Linker>
+					<Add library="/usr/lib/libm3api.so" />
+					<Add directory="/usr/lib" />
+				</Linker>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/ximea-xib-64-2-milk" prefix_auto="1" extension_auto="1" />
