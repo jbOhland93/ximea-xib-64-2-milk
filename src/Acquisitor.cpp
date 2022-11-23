@@ -9,6 +9,7 @@ bool Acquisitor::startAcquisition()
 {
     if (!isAcquiring())
     {
+        mp_sem->acquire();
         m_acqThread = thread(&Acquisitor::core, this);
         return true;
     }
@@ -18,14 +19,14 @@ bool Acquisitor::startAcquisition()
 
 bool Acquisitor::isAcquiring()
 {
-    return mp_sem->getCount() == 1;
+    return mp_sem->getCount() == 0;
 }
 
 void Acquisitor::stopAcquisition()
 {
     if (isAcquiring())
     {
-        mp_sem->acquire();      // Send a signal to the acquisition thread
+        mp_sem->release();      // Send a signal to the acquisition thread
         m_acqThread.join();     // Wait for the thred to end
         mp_sem->release();      // Release the semaphore so the acquisition can start again!
         m_acqThread = thread(); // Replace the thread object by a dummy.
@@ -34,11 +35,13 @@ void Acquisitor::stopAcquisition()
 
 void Acquisitor::core()
 {
+    int n = 0;
     while (isAcquiring())
     {
         // Currently, this loop only contains dummy content.
         // Acquire
-        cout << "Acquiring ...\n";
+        cout << "Acquiring " << n << " ...\n";
+        n++;
         // Sleep for 100 ms
         usleep(100000);
     }
