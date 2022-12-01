@@ -11,7 +11,7 @@ CPPFLAGS := -g -Wall
 #	-lm3api		- xiAPI for interfacing with the camera
 LDFLAGS := -lncurses -lm3api
 
-AUTORUN_AFTER_BUILD := true
+AUTORUN_AFTER_BUILD := false
 
 # =========================
 
