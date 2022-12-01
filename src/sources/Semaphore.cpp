@@ -1,4 +1,4 @@
-#include "../include/Semaphore.h"
+#include "../headers/Semaphore.h"
 #include <stdio.h>
 
 Semaphore::Semaphore(int count)

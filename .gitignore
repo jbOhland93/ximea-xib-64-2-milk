@@ -1,8 +1,5 @@
-# Code::Blocks specific
-*.layout
-*.depend
-bin/
-obj/
+# build folder
+build/
 
 # Prerequisites
 *.d

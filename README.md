@@ -7,3 +7,7 @@ https://github.com/cacao-org/cacao
 
 milk-repository:
 https://github.com/milk-org/milk
+
+## Build and execution instructions:
+make        # Builds the software and executes it automatically. Change "AUTORUN_AFTER_BUILD" in makefile to false to avoid this.
+make run    # Executes the software after it has already been built. Equivalent to ./build/xiB-64-2-milk

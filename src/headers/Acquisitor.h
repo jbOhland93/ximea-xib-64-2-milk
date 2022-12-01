@@ -3,7 +3,7 @@
 
 #include <thread>
 #include <memory>
-#include "../include/Semaphore.h"
+#include "../headers/Semaphore.h"
 
 // A class that handles the acquisition of the camera
 class Acquisitor

@@ -1,4 +1,4 @@
-#include "Acquisitor.h"
+#include "../headers/Acquisitor.h"
 
 #include <unistd.h>
 #include <iostream>

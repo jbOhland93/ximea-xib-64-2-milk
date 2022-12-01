@@ -1,15 +1,17 @@
 #include <iostream>
-
-
-#include "include/Semaphore.h"
-#include "include/Acquisitor.h"
-
 #include <unistd.h>
+
+#include "headers/UserInputHandler.h"
+#include "headers/Acquisitor.h"
 
 using namespace std;
 
 int main()
 {
+    UserInputHandler ui;
+    std::thread uiThread = thread(&UserInputHandler::core, &ui);
+    uiThread.join();
+
     Acquisitor acq;
     cout << "Is acquiring: " << acq.isAcquiring() << "\n";
     cout << "Starting acq result: " << acq.startAcquisition() << "\n";
@@ -19,5 +21,5 @@ int main()
     cout << "Is acquiring: " << acq.isAcquiring() << "\n";
     acq.stopAcquisition();
     cout << "Is acquiring: " << acq.isAcquiring() << "\n";
-	return 0;
+        return 0;
 }
