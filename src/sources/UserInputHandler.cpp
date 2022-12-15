@@ -6,31 +6,30 @@
 using namespace std;
 
 vector<userCmd> UserInputHandler::cmdList = {
-	CMD_HELP,
-	CMD_QUIT,
-	CMD_NONEXISTENT
+	userCmd::CMD_HELP,
+	userCmd::CMD_QUIT,
 };
 
 map<string,userCmd> UserInputHandler::cmdStrings = {
-	{"help", CMD_HELP},
-	{"quit", CMD_QUIT},
-	{"nonexist", CMD_NONEXISTENT},
+	{"help", userCmd::CMD_HELP},
+	{"quit", userCmd::CMD_QUIT},
 };
 
 map<userCmd,string> UserInputHandler::cmdHelp = {
-	{CMD_HELP, "Shows a list of available commands"},
-	{CMD_QUIT, "Quits the programm"},
-	{CMD_NONEXISTENT, "Nonexistent command"}
+	{userCmd::CMD_HELP, "Shows a list of available commands"},
+	{userCmd::CMD_QUIT, "Quits the programm"},
 };
-
-make_pair
 
 void UserInputHandler::core()
 {
     initscr();
-    addstr("\n\n === Welcome to our WIP CLI. ===\n");
+    wmove(stdscr, 0, 0);
+    addstr("=== Welcome to our WIP CLI. ===\n");
     addstr("\nEnter any string and hit enter to display the response.\n");
     addstr("Enter \"quit\" to exit the CLI.\n");
+    addstr("Enter \"help\" for a list of comand options.\n\n");
+    mPrintareaStart = getcury(stdscr);
+
     mvprintw(LINES-2,0,mPrompt);
 
     while (mRunning) {
@@ -45,8 +44,9 @@ void UserInputHandler::core()
 
 void UserInputHandler::waitOnNextCmd()
 {
-	wmove(stdscr, LINES-2, strlen(mPrompt));
+	wmove(stdscr, LINES-2, 0);
 	clrtoeol();
+    addstr(mPrompt);
 }
 
 void UserInputHandler::handleInput(char* input)
@@ -55,10 +55,10 @@ void UserInputHandler::handleInput(char* input)
 		handleUnknownCmd(input);
 	} else {
 		switch(cmdStrings[input]) {
-		case CMD_HELP:
+		case userCmd::CMD_HELP:
 			execCmdHelp();
 			break;
-		case CMD_QUIT:
+		case userCmd::CMD_QUIT:
 			mRunning = false;
 			break;
 		default:
@@ -66,6 +66,7 @@ void UserInputHandler::handleInput(char* input)
 			clrtoeol();
 			addstr(input);
 		}
+    }
 }
 
 void UserInputHandler::handleUnknownCmd(char* input)
@@ -75,16 +76,38 @@ void UserInputHandler::handleUnknownCmd(char* input)
 	addstr(input);
 }
 
-void UserInputHandler::execCmdHelp(char* input)
+void UserInputHandler::execCmdHelp()
 {
-	int maxLen = 0;
-	
+    int descrCol = 32;
+
+    clearPrintArea();
+    addstr("The following commands are available:\n");
+
 	map<string, userCmd>::iterator it;
 	for (it = cmdStrings.begin(); it != cmdStrings.end(); it++)
 	{
-		string cmdCall = it->first;
-		userCmd cmd = it->second;
-		
-		// Do something ...
+        addstr(it->first.c_str());
+        wmove(stdscr, getcury(stdscr), descrCol);
+        addstr(cmdHelp[it->second].c_str());
+        addstr("\n");
 	}
+    clearResponseLine();
+}
+
+void UserInputHandler::clearPrintArea()
+{
+    wmove(stdscr, mPrintareaStart, 0);
+    int curY = mPrintareaStart;
+    while (curY < LINES-2) {
+        clrtoeol();
+        curY++;
+        wmove(stdscr, curY, 0);
+    }
+    wmove(stdscr, mPrintareaStart, 0);
+}
+
+void UserInputHandler::clearResponseLine()
+{
+    wmove(stdscr, LINES-1, 0);
+    clrtoeol();
 }

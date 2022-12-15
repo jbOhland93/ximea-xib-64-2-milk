@@ -7,8 +7,7 @@
 
 enum class userCmd{
 	CMD_HELP,
-	CMD_QUIT,
-	CMD_NONEXISTENT
+	CMD_QUIT
 };
 
 class UserInputHandler
@@ -23,6 +22,7 @@ class UserInputHandler
 
     private:
 		bool mRunning = true;
+		int mPrintareaStart;
 		const char * mPrompt = "Enter command: ";
 		const char * mAnswer = "You entered: ";
 		const char * mAnswerUnknown = "Command not found: ";
@@ -39,6 +39,12 @@ class UserInputHandler
 		// Prints a help list
 		void execCmdHelp();
 		
+		// === Print methods ===
+		// Clears the print area
+		void clearPrintArea();
+		// Clears the line below the user input prompt
+		void clearResponseLine();
+
 };
 
 #endif // USERINPUTHANDLER_H
