@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <iostream>
 
+#include <time.h>
+
 using namespace std;
 
 bool Acquisitor::startAcquisition()
@@ -28,21 +30,40 @@ void Acquisitor::stopAcquisition()
     {
         mp_sem->release();      // Send a signal to the acquisition thread
         m_acqThread.join();     // Wait for the thred to end
-        mp_sem->release();      // Release the semaphore so the acquisition can start again!
         m_acqThread = thread(); // Replace the thread object by a dummy.
     }
 }
 
+unsigned long long int Acquisitor::getFrameCount()
+{
+    return m_framesAcquired;
+}
+
+float Acquisitor::getFPS()
+{
+    return m_FPS;
+}
+
 void Acquisitor::core()
 {
-    int n = 0;
+    struct timespec last, now;
+    clock_gettime(CLOCK_MONOTONIC, &last);
+    unsigned long long int lastFramecount = m_framesAcquired;
+
     while (isAcquiring())
     {
         // Currently, this loop only contains dummy content.
         // Acquire
-        cout << "Acquiring " << n << " ...\n";
-        n++;
+        m_framesAcquired++;
+        clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+        if (now.tv_nsec - last.tv_nsec + (now.tv_sec-last.tv_sec)*1e9 > 1e9)
+        {
+            m_FPS = (m_framesAcquired-lastFramecount)/((now.tv_nsec - last.tv_nsec + (now.tv_sec-last.tv_sec)*1e9)/1.e9);
+            lastFramecount = m_framesAcquired;
+            last = now;
+        }
         // Sleep for 100 ms
         usleep(100000);
     }
+    m_FPS = 0;
 }

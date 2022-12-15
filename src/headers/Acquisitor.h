@@ -17,12 +17,20 @@ class Acquisitor
         bool isAcquiring();
         // Stops the acquisition loop
         void stopAcquisition();
+        // Returns the current frame count
+        unsigned long long int getFrameCount();
+        // Returns the current estimated framerage in frames per second
+        float getFPS();
 
     private:
         // The semaphore to stop the image acquisition once running
         const std::shared_ptr<Semaphore> mp_sem{ new Semaphore(1) };
         // The acquisition thread
         std::thread m_acqThread;
+        // The total number of frames which has been acquired
+        unsigned long long int m_framesAcquired = 0;
+        // The current frames per second
+        float m_FPS = 0.;
 
         // The acquisition loop, handling the raw acquisition of the camera.
         // This will be launched as separate thread.

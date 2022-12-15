@@ -5,8 +5,13 @@
 #include <map>
 #include <vector>
 
+#include "Acquisitor.h"
+
 enum class userCmd{
 	CMD_HELP,
+	CMD_START_ACQ,
+	CMD_STOP_ACQ,
+	CMD_GET_FPS,
 	CMD_QUIT
 };
 
@@ -17,16 +22,22 @@ class UserInputHandler
 		static std::map<std::string,userCmd> cmdStrings;
 		static std::map<userCmd,std::string> cmdHelp;
 		
+		// Constructor
+		UserInputHandler(std::shared_ptr<Acquisitor> acq);
+
         // The central loop of the input handler. Handles user input.
         void core();
 
     private:
+		const std::shared_ptr<Acquisitor> mp_acquisitor;
 		bool mRunning = true;
 		int mPrintareaStart;
 		const char * mPrompt = "Enter command: ";
-		const char * mAnswer = "You entered: ";
 		const char * mAnswerUnknown = "Command not found: ";
         std::string mCurrentCommand;
+
+		// Make default ctor private
+		UserInputHandler();
 		
 		// Flushes the last user input and places the cursor at the cmd input position
         void waitOnNextCmd();
@@ -38,6 +49,10 @@ class UserInputHandler
 		void handleUnknownCmd(char* input);
 		// Prints a help list
 		void execCmdHelp();
+		// Starts/Stops the acquisition
+		void execCmdStartStopAcq(bool start);
+		// Prints the current estimated framerate
+		void execCmdPrintFPS();
 		
 		// === Print methods ===
 		// Clears the print area

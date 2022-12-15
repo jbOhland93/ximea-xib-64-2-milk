@@ -2,23 +2,38 @@
 
 #include <ncurses.h>
 #include <cstring>
+#include "UserInputHandler.h"
 
 using namespace std;
 
 vector<userCmd> UserInputHandler::cmdList = {
 	userCmd::CMD_HELP,
+    userCmd::CMD_START_ACQ,
+	userCmd::CMD_STOP_ACQ,
+    userCmd::CMD_GET_FPS,
 	userCmd::CMD_QUIT,
 };
 
 map<string,userCmd> UserInputHandler::cmdStrings = {
 	{"help", userCmd::CMD_HELP},
+    {"start", userCmd::CMD_START_ACQ},
+    {"stop", userCmd::CMD_STOP_ACQ},
+    {"fps", userCmd::CMD_GET_FPS},
 	{"quit", userCmd::CMD_QUIT},
 };
 
 map<userCmd,string> UserInputHandler::cmdHelp = {
 	{userCmd::CMD_HELP, "Shows a list of available commands"},
+    {userCmd::CMD_START_ACQ, "Starts the camera acquisition"},
+    {userCmd::CMD_STOP_ACQ, "Stops the camera acquisition"},
+    {userCmd::CMD_GET_FPS, "Prints the current estimated framerate"},
 	{userCmd::CMD_QUIT, "Quits the programm"},
 };
+
+UserInputHandler::UserInputHandler(std::shared_ptr<Acquisitor> acq)
+    : mp_acquisitor(acq)
+{
+}
 
 void UserInputHandler::core()
 {
@@ -58,6 +73,15 @@ void UserInputHandler::handleInput(char* input)
 		case userCmd::CMD_HELP:
 			execCmdHelp();
 			break;
+        case userCmd::CMD_START_ACQ:
+			execCmdStartStopAcq(true);
+			break;
+        case userCmd::CMD_STOP_ACQ:
+			execCmdStartStopAcq(false);
+			break;
+        case userCmd::CMD_GET_FPS:
+            execCmdPrintFPS();
+            break;
 		case userCmd::CMD_QUIT:
 			mRunning = false;
 			break;
@@ -71,8 +95,8 @@ void UserInputHandler::handleInput(char* input)
 
 void UserInputHandler::handleUnknownCmd(char* input)
 {
-	mvprintw(LINES-1, 0, mAnswerUnknown);
-	clrtoeol();
+    clearResponseLine();
+	addstr(mAnswerUnknown);
 	addstr(input);
 }
 
@@ -92,6 +116,37 @@ void UserInputHandler::execCmdHelp()
         addstr("\n");
 	}
     clearResponseLine();
+}
+
+void UserInputHandler::execCmdStartStopAcq(bool start)
+{
+    clearResponseLine();
+    if (start)
+    {
+        if (mp_acquisitor->isAcquiring())
+            mvprintw(LINES-1, 0, "Acquisition is already running (%d frames acquired).", mp_acquisitor->getFrameCount());
+        else
+        {
+            mp_acquisitor->startAcquisition();
+            addstr("Acquisition started!");
+        }
+    }
+    else
+        if (mp_acquisitor->isAcquiring())
+        {
+            mp_acquisitor->stopAcquisition();
+            mvprintw(LINES-1, 0, "Acquisition stopped. %d frames acquired in total.", mp_acquisitor->getFrameCount());
+        }
+        else
+        {
+            addstr("Acquisition not running, nothing to be done.");
+        }
+}
+
+void UserInputHandler::execCmdPrintFPS()
+{
+    clearResponseLine();
+    mvprintw(LINES-1, 0, "The current framerate is approximately %.3f frames per second.", mp_acquisitor->getFPS());
 }
 
 void UserInputHandler::clearPrintArea()

@@ -29,7 +29,22 @@ int main()
     XI_RETURN stat = connectToCamera(xiH);
     if (stat == XI_OK)
     {
+        // Optional: example acquisition
         exampleAqcuisition(xiH);
+
+        std::shared_ptr<Acquisitor> p_acq = std::shared_ptr<Acquisitor>( new Acquisitor() );
+        UserInputHandler ui(p_acq);
+        std::thread uiThread = thread(&UserInputHandler::core, &ui);
+        uiThread.join();
+
+        cout << "Is acquiring: " << p_acq->isAcquiring() << "\n";
+        cout << "Starting acq result: " << p_acq->startAcquisition() << "\n";
+        cout << "Is acquiring: " << p_acq->isAcquiring() << "\n";
+        usleep(1000000);
+        cout << "Stop\n";
+        cout << "Is acquiring: " << p_acq->isAcquiring() << "\n";
+        p_acq->stopAcquisition();
+        cout << "Is acquiring: " << p_acq->isAcquiring() << "\n";
 
         xiCloseDevice(xiH);
 
@@ -39,14 +54,7 @@ int main()
         //uiThread.join();
 
         //Acquisitor acq;
-        //cout << "Is acquiring: " << acq.isAcquiring() << "\n";
-        //cout << "Starting acq result: " << acq.startAcquisition() << "\n";
-        //cout << "Is acquiring: " << acq.isAcquiring() << "\n";
-        //usleep(1000000);
-        //cout << "Stop\n";
-        //cout << "Is acquiring: " << acq.isAcquiring() << "\n";
-        //acq.stopAcquisition();
-        //cout << "Is acquiring: " << acq.isAcquiring() << "\n";
+        //
     }
     else
     {
