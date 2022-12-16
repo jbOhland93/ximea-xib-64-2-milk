@@ -1,8 +1,14 @@
 #include "../headers/UserInputHandler.h"
 
 #include <ncurses.h>
-#include <cstring>
+//#include <cstring>
+#include <sstream>
+#include <iterator>
+
 #include "UserInputHandler.h"
+
+//#include <algorithm>
+//#include <iterator>
 
 using namespace std;
 
@@ -11,6 +17,7 @@ vector<userCmd> UserInputHandler::cmdList = {
     userCmd::CMD_START_ACQ,
 	userCmd::CMD_STOP_ACQ,
     userCmd::CMD_GET_FPS,
+    userCmd::CMD_SET_EXPOSURE,
 	userCmd::CMD_QUIT,
 };
 
@@ -19,6 +26,7 @@ map<string,userCmd> UserInputHandler::cmdStrings = {
     {"start", userCmd::CMD_START_ACQ},
     {"stop", userCmd::CMD_STOP_ACQ},
     {"fps", userCmd::CMD_GET_FPS},
+    {"setExpos", userCmd::CMD_SET_EXPOSURE},
 	{"quit", userCmd::CMD_QUIT},
 };
 
@@ -27,11 +35,12 @@ map<userCmd,string> UserInputHandler::cmdHelp = {
     {userCmd::CMD_START_ACQ, "Starts the camera acquisition"},
     {userCmd::CMD_STOP_ACQ, "Stops the camera acquisition"},
     {userCmd::CMD_GET_FPS, "Prints the current estimated framerate"},
+    {userCmd::CMD_SET_EXPOSURE, "Sets the exposure time in microseconds"},
 	{userCmd::CMD_QUIT, "Quits the programm"},
 };
 
-UserInputHandler::UserInputHandler(std::shared_ptr<Acquisitor> acq)
-    : mp_acquisitor(acq)
+UserInputHandler::UserInputHandler(std::shared_ptr<Acquisitor> acq, std::shared_ptr<CamConfigurator> camConf)
+    : mp_acquisitor(acq), mp_camConf(camConf)
 {
 }
 
@@ -66,10 +75,14 @@ void UserInputHandler::waitOnNextCmd()
 
 void UserInputHandler::handleInput(char* input)
 {
-	if (cmdStrings.find(input) == cmdStrings.end()) {
-		handleUnknownCmd(input);
+    istringstream iss(input);
+    vector<string> tokens{istream_iterator<string>{iss}, istream_iterator<string>{}};
+    string cmd = tokens.at(0);
+
+	if (cmdStrings.find(cmd) == cmdStrings.end()) {
+		handleUnknownCmd(tokens.at(0));
 	} else {
-		switch(cmdStrings[input]) {
+		switch(cmdStrings[cmd]) {
 		case userCmd::CMD_HELP:
 			execCmdHelp();
 			break;
@@ -82,22 +95,25 @@ void UserInputHandler::handleInput(char* input)
         case userCmd::CMD_GET_FPS:
             execCmdPrintFPS();
             break;
+        case userCmd::CMD_SET_EXPOSURE:
+            execCmdSetExposure(tokens);
+            break;
 		case userCmd::CMD_QUIT:
 			mRunning = false;
 			break;
 		default:
 			mvprintw(LINES-1, 0, "Command found but no switch case implemented: ");
 			clrtoeol();
-			addstr(input);
+			addstr(cmd.c_str());
 		}
     }
 }
 
-void UserInputHandler::handleUnknownCmd(char* input)
+void UserInputHandler::handleUnknownCmd(string cmd)
 {
     clearResponseLine();
 	addstr(mAnswerUnknown);
-	addstr(input);
+	addstr(cmd.c_str());
 }
 
 void UserInputHandler::execCmdHelp()
@@ -154,6 +170,38 @@ void UserInputHandler::execCmdPrintFPS()
 {
     clearResponseLine();
     mvprintw(LINES-1, 0, "The current framerate is approximately %.3f frames per second.", mp_acquisitor->getFPS());
+}
+
+void UserInputHandler::execCmdSetExposure(std::vector<std::string> args)
+{
+    clearResponseLine();
+    if (args.size() < 2)
+        mvprintw(LINES-1, 0, "Please add the desired exposure time in microseconds.");
+    else
+    {
+        try 
+        {
+            float us = stof(args.at(1));
+            if (us < 0)
+            mvprintw(LINES-1, 0, "The exposure time has to be greater than 0.");
+            else
+            {
+                float set = mp_camConf->setExposureTime_us(us);
+                if (set == -1)
+                {
+                    string msg = mp_camConf->getErrorDescription();
+                    mvprintw(LINES-1, 0, "The camera did not accept the given value of %.3f. It could be out of range. Error: %s", us, msg.c_str());
+                    mp_camConf->clearError();
+                }
+                else
+                    mvprintw(LINES-1, 0, "The exposure time has ben set to %.3f us.", set);
+            }
+        }
+        catch (std::invalid_argument e)
+        {
+            mvprintw(LINES-1, 0, "The first parameter must be a numerical value.");
+        }
+    }
 }
 
 void UserInputHandler::clearPrintArea()
