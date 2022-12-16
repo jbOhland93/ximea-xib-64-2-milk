@@ -127,7 +127,14 @@ void UserInputHandler::execCmdStartStopAcq(bool start)
             mvprintw(LINES-1, 0, "Acquisition is already running (%d frames acquired).", mp_acquisitor->getFrameCount());
         else
         {
+            int w,h;
+            getmaxyx(stdscr, h, w);
+            
+            WINDOW* win = newwin(0,0,w,h);
+            overwrite(stdscr, win);
+
             mp_acquisitor->startAcquisition();
+            overwrite(win, stdscr);
             addstr("Acquisition started!");
         }
     }

@@ -10,51 +10,39 @@
 #include "headers/UserInputHandler.h"
 #include "headers/Acquisitor.h"
 
-// Ximea defines
-#define HandleResult(res,place) if (res!=XI_OK) {printf("Error after %s (%d)\n",place,res);goto finish;}
-
 using namespace std;
 
 // === Helper functions ===
 
 // Tries to connect to the camera and returns an error code.
 XI_RETURN connectToCamera(HANDLE& cameraHandle);
-
+// A small example on how to acquire images from the camera (as given by XIMEA)
 XI_RETURN exampleAqcuisition(HANDLE& cameraHandle);
 
 // === Main function ===
 int main()
 {
+    // Establish a camera connection and set initial parameters
     HANDLE xiH;
     XI_RETURN stat = connectToCamera(xiH);
+    // If the connection is successfull, launch the CLI.
     if (stat == XI_OK)
     {
         // Optional: example acquisition
-        exampleAqcuisition(xiH);
+        //exampleAqcuisition(xiH);
 
-        std::shared_ptr<Acquisitor> p_acq = std::shared_ptr<Acquisitor>( new Acquisitor() );
+        // Close the stderr stream at this point.
+        // This is to avoid the xiAPI to spam status messages into the CLI.
+        fclose(stderr);
+
+        // Initiate the acquisitor
+        std::shared_ptr<Acquisitor> p_acq = std::shared_ptr<Acquisitor>( new Acquisitor(xiH) );
+        // Start the CLI
         UserInputHandler ui(p_acq);
         std::thread uiThread = thread(&UserInputHandler::core, &ui);
         uiThread.join();
 
-        cout << "Is acquiring: " << p_acq->isAcquiring() << "\n";
-        cout << "Starting acq result: " << p_acq->startAcquisition() << "\n";
-        cout << "Is acquiring: " << p_acq->isAcquiring() << "\n";
-        usleep(1000000);
-        cout << "Stop\n";
-        cout << "Is acquiring: " << p_acq->isAcquiring() << "\n";
-        p_acq->stopAcquisition();
-        cout << "Is acquiring: " << p_acq->isAcquiring() << "\n";
-
         xiCloseDevice(xiH);
-
-    // )================================
-        //UserInputHandler ui;
-        //std::thread uiThread = thread(&UserInputHandler::core, &ui);
-        //uiThread.join();
-
-        //Acquisitor acq;
-        //
     }
     else
     {
