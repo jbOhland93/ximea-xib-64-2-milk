@@ -1,10 +1,11 @@
-#include "../headers/Acquisitor.h"
+#include "Acquisitor.h"
 
 #include <unistd.h>
 #include <iostream>
 #include <cstring>
 #include <time.h>
-#include "Acquisitor.h"
+
+#include "headers/global.h"
 
 using namespace std;
 
@@ -64,14 +65,17 @@ void Acquisitor::core()
     image.size = sizeof(XI_IMG);
 
     
-    XI_RETURN stat = xiStartAcquisition(m_cameraHandle);
+    XI_RETURN stat = XI_OK;
+    if (projectflags::USE_CAM)
+        stat = xiStartAcquisition(m_cameraHandle);
     mp_acqStartSem->release();
     if (stat == XI_OK)
     {
         while (isAcquiring())
         {
             // getting image from camera
-            stat = xiGetImage(m_cameraHandle, 5000, &image);
+            if (projectflags::USE_CAM)
+                stat = xiGetImage(m_cameraHandle, 5000, &image);
             if (stat == XI_OK)
             {
                 // Successfully acquired frame!
@@ -83,7 +87,8 @@ void Acquisitor::core()
                     lastFramecount = m_framesAcquired;
                     last = now;
                 }
-                unsigned char pixel = *(unsigned char*)image.bp;
+                if (projectflags::USE_CAM)
+                    unsigned char pixel = *(unsigned char*)image.bp;
                 //printf("Image %lld (%dx%d) received from camera. First pixel value: %d\n", m_framesAcquired, (int)image.width, (int)image.height, pixel);
             }
             else
@@ -92,5 +97,6 @@ void Acquisitor::core()
     }
     m_FPS = 0;
 
-    xiStopAcquisition(m_cameraHandle);
+    if (projectflags::USE_CAM)
+        xiStopAcquisition(m_cameraHandle);
 }

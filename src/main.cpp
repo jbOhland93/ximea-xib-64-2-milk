@@ -7,6 +7,7 @@
 #include <cstring>
 
 // Application includes
+#include "headers/global.h"
 #include "headers/UserInputHandler.h"
 #include "headers/Acquisitor.h"
 #include "headers/CamConfigurator.h"
@@ -22,8 +23,11 @@ XI_RETURN connectToCamera(HANDLE& cameraHandle);
 int main()
 {
     // Establish a camera connection
-    HANDLE xiH;
-    XI_RETURN stat = connectToCamera(xiH);
+    HANDLE xiH = NULL;
+    XI_RETURN stat = XI_OK;
+    if (projectflags::USE_CAM)
+        stat = connectToCamera(xiH);
+
     // If the connection is successfull, launch the CLI.
     if (stat == XI_OK)
     {
@@ -40,7 +44,8 @@ int main()
         std::thread uiThread = thread(&UserInputHandler::core, &ui);
         uiThread.join();
 
-        xiCloseDevice(xiH);
+        if (projectflags::USE_CAM)
+            xiCloseDevice(xiH);
     }
     else
     {

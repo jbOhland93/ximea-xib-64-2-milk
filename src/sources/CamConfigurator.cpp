@@ -1,4 +1,5 @@
 #include "CamConfigurator.h"
+#include "headers/global.h"
 
 #define getP(param,field,type,description) if(m_err==XI_OK) {m_type=type; m_err = xiGetParam(m_cameraHandle, param, &field, &m_size, &m_type);if (m_err!=XI_OK)m_actionDescription=description;}
 #define setInt(param,value,description) if(m_err==XI_OK) {m_err = xiSetParamInt(m_cameraHandle, param, value);if (m_err!=XI_OK)m_actionDescription=description;}
@@ -8,6 +9,9 @@ using namespace std;
 CamConfigurator::CamConfigurator(HANDLE &cameraHandle, std::shared_ptr<Acquisitor> acq)
     : m_cameraHandle(cameraHandle), mp_acquisior(acq)
 {
+    if (!projectflags::USE_CAM)
+        return; // Only configure the camera if it is supposed to be used ...
+
     // Setting "exposure" parameter to 7500 fps equivalent
     float exposure_us = 1e6/7500.;
     setInt(XI_PRM_EXPOSURE, exposure_us, "Set exposure time");
