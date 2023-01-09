@@ -46,6 +46,9 @@ CamConfigurator::CamConfigurator(HANDLE &cameraHandle, std::shared_ptr<Acquisito
 
 float CamConfigurator::setExposureTime_us(float exposureTime_us)
 {
+    if (!projectflags::USE_CAM)
+        return -1; // Only configure the camera if it is supposed to be used ...
+
     setInt(XI_PRM_EXPOSURE, exposureTime_us, "Set exposure time");
     if (m_err != XI_OK)
         return -1;
@@ -64,6 +67,9 @@ bool CamConfigurator::error()
 
 std::string CamConfigurator::getErrorDescription()
 {
+    if (!projectflags::USE_CAM)
+        return "Camera unused (projectflags::USE_CAM == false).\n";
+        
     string msg = m_actionDescription;
     msg.append(" (");
     msg.append(to_string(m_err));

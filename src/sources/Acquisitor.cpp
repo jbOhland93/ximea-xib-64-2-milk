@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstring>
 #include <time.h>
+#include <chrono>
 
 #include "headers/global.h"
 
@@ -57,8 +58,9 @@ float Acquisitor::getFPS()
 void Acquisitor::core()
 {
     struct timespec last, now;
-    clock_gettime(CLOCK_MONOTONIC, &last);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &last);
     unsigned long long int lastFramecount = m_framesAcquired;
+    double timediff_ns = -1.;
     // image buffer
     XI_IMG image;
     memset(&image,0,sizeof(image));
@@ -76,12 +78,16 @@ void Acquisitor::core()
             // getting image from camera
             if (projectflags::USE_CAM)
                 stat = xiGetImage(m_cameraHandle, 5000, &image);
+            else
+                // Sleep for a ms to limit the frame rate if not camera is used
+                this_thread::sleep_for(chrono::milliseconds(1));
             if (stat == XI_OK)
             {
                 // Successfully acquired frame!
                 m_framesAcquired++; // Increase frame count
                 clock_gettime(CLOCK_MONOTONIC_RAW, &now); // Get timestamp to calculate framerate
-                if (now.tv_nsec - last.tv_nsec + (now.tv_sec-last.tv_sec)*1e9 > 1e9)
+                timediff_ns = now.tv_nsec - last.tv_nsec + (now.tv_sec-last.tv_sec)*1e9;
+                if (timediff_ns > 1e9)
                 {   // One second elapsed since last framerate update. Do update now.
                     m_FPS = (m_framesAcquired-lastFramecount)/((now.tv_nsec - last.tv_nsec + (now.tv_sec-last.tv_sec)*1e9)/1.e9);
                     lastFramecount = m_framesAcquired;

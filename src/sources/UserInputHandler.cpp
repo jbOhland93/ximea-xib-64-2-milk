@@ -64,6 +64,10 @@ void UserInputHandler::core()
 		handleInput(str);
     }
     endwin();
+    
+    // Cleanup
+    if (mp_acquisitor->isAcquiring())
+        mp_acquisitor->stopAcquisition();
 }
 
 void UserInputHandler::waitOnNextCmd()
