@@ -8,11 +8,45 @@
 
 #include "headers/global.h"
 
+#ifndef __cplusplus
+    #define __cplusplus
+#endif
+
+// Include ISIO headers
+#include "ImageStreamIO.h"
+#include "ImageStruct.h"
+
 using namespace std;
 
 Acquisitor::Acquisitor(HANDLE &cameraHandle)
     : m_cameraHandle(cameraHandle)
 {
+    init_ImageStreamIO();
+
+    IMAGE image;
+    string name = "my_c++_steam";
+    char * streamname = (char*)"my_c++_steam";
+    int naxis = 2;
+    int width = 2;
+    int height = 2;
+    uint32_t * imsize = new uint32_t[naxis]();
+    imsize[0] = width;
+    imsize[1] = height;
+    uint8_t atype = _DATATYPE_UINT8;
+    // image will be in shared memory
+    int shared = 1;
+    // allocate space for keywords
+    int NBkw = 50;
+    #ifdef _IMAGESTREAMIO_H
+        ImageStreamIO_createIm(&image,
+                                streamname,
+                                naxis,
+                                imsize,
+                                atype, // called atype
+                                shared,
+                                NBkw,
+                                10);
+    #endif
 }
 
 bool Acquisitor::startAcquisition()

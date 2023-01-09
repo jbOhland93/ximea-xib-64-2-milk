@@ -4,12 +4,15 @@
 CC := nvcc
 CXX := nvcc
 # compiler flags:
-#  -g     - this flag adds debugging information to the executable file
-#  -Wall  - this flag is used to turn on most compiler warnings
-CPPFLAGS := -g -Wall
-#  -lcurses		- ncurses library for CLI
-#	-lm3api		- xiAPI for interfacing with the camera
-LDFLAGS := -lncurses -lm3api
+#	-g	- this flag adds debugging information to the executable file
+CPPFLAGS := -g 
+
+EXT_LIB_DIRS := -L${MILK_INSTALLDIR}/lib/
+#	-lcurses			- ncurses library for CLI
+#	-lm3api				- xiAPI for interfacing with the camera
+#	-lImageStreamIO		- Interfacing with milk data streams
+LDFLAGS := $(EXT_LIB_DIRS) -lncurses -lm3api -lImageStreamIO
+EXT_INC_DIRS := -I${MILK_INSTALLDIR}/include/ImageStreamIO/
 
 AUTORUN_AFTER_BUILD := false
 
@@ -40,12 +43,13 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 # The -MMD and -MP flags together generate Makefiles for us!
 # These files will have .d instead of .o as the output.
-CPPFLAGS := $(INC_FLAGS) -MMD -MP
+CPPFLAGS := $(CPPFLAGS) $(INC_FLAGS) $(EXT_INC_DIRS) -MMD -MP
 
 # The final build step.
 # Extended by an automatic run if $(AUTORUN_AFTER_BUILD) equals true
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 	$(CXX) $(OBJS) -o $@ $(LDFLAGS)
+	@ln -s ${MILK_INSTALLDIR}/lib/libImageStreamIO.so build/libImageStreamIO.so
 ifeq ($(AUTORUN_AFTER_BUILD), true)
 	@echo "\n\n=== Execute application ===\n"
 	@make run | grep -v make
@@ -71,7 +75,7 @@ clean:
 
 # Custom: Shortcut to run the application
 run: build/$(TARGET_EXEC)
-	@./build/$(TARGET_EXEC)
+	@(cd build; ./$(TARGET_EXEC))
 
 # Include the .d makefiles. The - at the front suppresses the errors of missing
 # Makefiles. Initially, all the .d files will be missing, and we don't want those

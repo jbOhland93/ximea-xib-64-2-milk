@@ -32,7 +32,7 @@ int main()
     if (stat == XI_OK)
     {
         // Close the stderr stream at this point.
-        // This is to avoid the xiAPI to spam status messages into the CLI.
+        // This is to avoid the xiAPI to spam status messages into the CLI. 
         fclose(stderr);
 
         // Initiate the acquisitor
