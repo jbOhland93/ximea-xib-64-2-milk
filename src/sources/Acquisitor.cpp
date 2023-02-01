@@ -19,6 +19,9 @@ Acquisitor::Acquisitor(HANDLE &cameraHandle)
 
 bool Acquisitor::startAcquisition()
 {
+    if (mp_imProc == nullptr)
+        throw ("No region of interest set yet. Could not allocate a buffer.");
+
     if (!isAcquiring())
     {
         mp_acqSem->acquire();
@@ -50,6 +53,35 @@ void Acquisitor::stopAcquisition()
     }
 }
 
+bool Acquisitor::pauseAcquisition()
+{
+    if (isAcquiring())
+    {
+        stopAcquisition();
+        m_paused = true;
+        return true;
+    }
+    else
+        return false;
+}
+
+bool Acquisitor::resumeAcquisition()
+{
+    if (isAcquiring())
+    {
+        m_paused = false;
+        return true;
+    }
+    else if (m_paused == true)
+    {
+        startAcquisition();
+        m_paused = false;
+        return true;
+    }
+    else
+        return false;
+}
+
 unsigned long long int Acquisitor::getFrameCount()
 {
     return m_framesAcquired;
@@ -58,6 +90,14 @@ unsigned long long int Acquisitor::getFrameCount()
 float Acquisitor::getFPS()
 {
     return m_FPS;
+}
+
+void Acquisitor::setImSize(int width, int height)
+{
+    if (mp_imProc == nullptr)
+        mp_imProc = shared_ptr<ImageProcessor>(new ImageProcessor(width, height));
+    else
+        mp_imProc->setImSize(width, height);
 }
 
 void Acquisitor::coreXI()
@@ -79,11 +119,13 @@ void Acquisitor::coreXI()
         while (isAcquiring())
         {
             // getting image from camera
+            image.bp = mp_imProc->getBufferPtr(); // Set the pointer where the data should be written to
+            image.bp_size = mp_imProc->getPayloadSize(); // Sets the size of the buffer that can be filled
             stat = xiGetImage(m_cameraHandle, 5000, &image);
             if (stat == XI_OK)
             {
                 // Successfully acquired frame!
-                    // ToDo: Push frame to image processor
+                mp_imProc->updateImage();
                 // Do logging, determine FPS etc ...
                 m_framesAcquired++; // Increase frame count
                 if (lastSecond != image.tsSec)

@@ -13,6 +13,18 @@ CamConfigurator::CamConfigurator(HANDLE &cameraHandle, std::shared_ptr<Acquisito
 {
     if (!projectflags::USE_CAM)
         return; // Only configure the camera if it is supposed to be used ...
+    
+    // Set the image data format to XI_RAW16.
+    // The camera supports 10 bit, which are filled into two bytes.
+    // Pixels take values between 0 and 1023
+    // The blacklevel is NOT subtracted in this mode
+    // See https://www.ximea.com/support/wiki/apis/XiAPI_Manual#XI_PRM_IMAGE_DATA_FORMAT-or-imgdataformat
+    setInt(XI_PRM_IMAGE_DATA_FORMAT, XI_RAW16, "Setting the image date format");
+
+    // Set the buffer policy to "safe".
+    // Like this, the application defines where the data shall be written.
+    // See https://www.ximea.com/support/wiki/apis/XiAPI_Manual#XI_PRM_BUFFER_POLICY-or-buffer_policy
+    setInt(XI_PRM_BUFFER_POLICY, XI_BP_SAFE, "Setting the buffer policy");
 
     // Camera performance
     setInt(XI_PRM_LIMIT_BANDWIDTH_MODE, XI_OFF, "Unset limit bandwidth mode");
@@ -89,19 +101,28 @@ shared_ptr<vector<int>> CamConfigurator::setROI(int roiW, int roiH, int roiX, in
     setInt(XI_PRM_OFFSET_X, roiX, "Set ROI x");
     setInt(XI_PRM_OFFSET_Y, roiY, "Set ROI y");
 
+    // Read the parameters
     int getW;
     int getH;
     int getX;
     int getY;
+    int getPayloadSize;
     getP(XI_PRM_WIDTH, getW, XI_PRM_TYPE::xiTypeInteger, "Get ROI width");
     getP(XI_PRM_HEIGHT, getH, XI_PRM_TYPE::xiTypeInteger, "Get ROI height");
     getP(XI_PRM_OFFSET_X, getX, XI_PRM_TYPE::xiTypeInteger, "Get ROI x");
     getP(XI_PRM_OFFSET_Y, getY, XI_PRM_TYPE::xiTypeInteger, "Get ROI y");
+    getP(XI_PRM_IMAGE_PAYLOAD_SIZE, getPayloadSize, XI_PRM_TYPE::xiTypeInteger, "Get payload size");
+
+    // Tell the acquisitr that the image size changed
+    mp_acquisior->setImSize(getW, getH);
+
+    // Pack the result as a return value
     shared_ptr<vector<int>> actualROI = shared_ptr<vector<int>>(new vector<int>());
     actualROI.get()->push_back(getW);
     actualROI.get()->push_back(getH);
     actualROI.get()->push_back(getX);
     actualROI.get()->push_back(getY);
+    actualROI.get()->push_back(getPayloadSize);
 
     return actualROI;
 }

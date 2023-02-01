@@ -22,10 +22,17 @@ class Acquisitor
         bool isAcquiring();
         // Stops the acquisition loop
         void stopAcquisition();
+        // If the acquisition is running, it will be stopped and can be resumed later.
+        bool pauseAcquisition();
+        // If the acquisition was paused, it will be started again.
+        // If it was not paused, nothing happens.
+        bool resumeAcquisition();
         // Returns the current frame count
         unsigned long long int getFrameCount();
         // Returns the current estimated framerage in frames per second
         float getFPS();
+        // Sets the size of the image, which is used to allocate memory
+        void setImSize(int width, int height);
 
     private:
         const HANDLE& m_cameraHandle;
@@ -39,7 +46,10 @@ class Acquisitor
         unsigned long long int m_framesAcquired = 0;
         // The current frames per second
         float m_FPS = 0.;
-        const ImageProcessor m_imProc;
+        // Pointer to the image processor which manages pixel data
+        std::shared_ptr<ImageProcessor> mp_imProc{ nullptr };
+        // Flag that indicates if the acquisition has been temporarily paused
+        bool m_paused = false;
 
         // Standard ctor, not to be used
         Acquisitor();

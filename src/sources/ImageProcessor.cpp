@@ -1,8 +1,9 @@
 #include "ImageProcessor.h"
 
-ImageProcessor::ImageProcessor()
+ImageProcessor::ImageProcessor(int width, int height)
 {
-    initializeStream();
+    init_ImageStreamIO();
+    setImSize(width, height);
 }
 
 ImageProcessor::~ImageProcessor()
@@ -10,19 +11,35 @@ ImageProcessor::~ImageProcessor()
     // This does not work, for some reason ...
     // The stream still apears in milk-streamCTRL.
     ImageStreamIO_closeIm(&m_image);
-
-    /*void* bufferLocation;
-    ImageStreamIO_writeBuffer(&m_image, &bufferLocation);
-    for (int i = 0; i < 10; i++)
-        *bufferLocation = i;
-        bufferLocation++;*/
 }
 
-void ImageProcessor::initializeStream()
+void *ImageProcessor::getBufferPtr()
+{
+    void* bufferPointer;
+    ImageStreamIO_writeBuffer(&m_image, &bufferPointer);
+    return bufferPointer;
+}
+
+int ImageProcessor::getPayloadSize()
+{
+    return m_width*m_height*2;
+}
+
+void ImageProcessor::updateImage()
+{
+    ImageStreamIO_UpdateIm(&m_image);
+}
+
+void ImageProcessor::setImSize(int width, int height)
+{
+    initializeStream(width, height);
+    m_width = width;
+    m_height = height;
+}
+
+void ImageProcessor::initializeStream(int width, int height)
 {
     int naxis = 2;
-    int width = 10;
-    int height = 10;
     uint32_t * imsize = new uint32_t[naxis]();
     imsize[0] = width;
     imsize[1] = height;

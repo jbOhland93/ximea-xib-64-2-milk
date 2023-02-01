@@ -14,14 +14,28 @@ class ImageProcessor
 {
     public:
         // Ctor, initializing the milk stream
-        ImageProcessor();
+        ImageProcessor(int width, int height);
         // Destructor, deleting the milk stream
         ~ImageProcessor();
-    private:
-        char * mp_streamname = (char*)"my_deletable_steam2";
-        IMAGE m_image;
 
-        void initializeStream();
+        // Sets the region of interest of the camera
+        void setImSize(int width, int height);
+
+        // Returns the pointer to the current image buffer
+        void* getBufferPtr();
+        // Returns the size of the allocated buffer
+        int getPayloadSize();
+
+        // Posts the semaphores and increases the circular buffer
+        void updateImage();
+    private:
+        char * mp_streamname = (char*)"ximea-cam";
+        IMAGE m_image;
+        int m_width;
+        int m_height;
+
+        ImageProcessor();
+        void initializeStream(int width, int height);
 };
 
 #endif // IMAGEPROCESSOR_H

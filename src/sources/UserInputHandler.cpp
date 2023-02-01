@@ -297,6 +297,7 @@ void UserInputHandler::execCmdSetROI(std::vector<std::string> args)
                 mvprintw(LINES-1, 0, "The sum of the height (2st arg) and the offset (4th arg) has to be less than %d.", mp_camConf->getSensorHeight());
             else
             {
+                mp_acquisitor->pauseAcquisition();
                 shared_ptr<vector<int>> actualROI = mp_camConf->setROI(width, height, offX, offY);
                 if (mp_camConf->error())
                 {
@@ -305,11 +306,15 @@ void UserInputHandler::execCmdSetROI(std::vector<std::string> args)
                     mp_camConf->clearError();
                 }
                 else
-                    mvprintw(LINES-1, 0, "The exposure ROI has ben set to w=%d, h=%d, offX=%d, offY=%d.",
+                {
+                    mp_acquisitor->resumeAcquisition();
+                    mvprintw(LINES-1, 0, "The exposure ROI has ben set to w=%d, h=%d, offX=%d, offY=%d, payload=%d bytes.",
                         actualROI.get()->at(0),
                         actualROI.get()->at(1),
                         actualROI.get()->at(2),
-                        actualROI.get()->at(3));
+                        actualROI.get()->at(3),
+                        actualROI.get()->at(4));
+                }
             }
         }
         catch (std::invalid_argument e)
