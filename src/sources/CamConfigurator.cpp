@@ -101,7 +101,16 @@ shared_ptr<vector<int>> CamConfigurator::setROI(int roiW, int roiH, int roiX, in
     setInt(XI_PRM_OFFSET_X, roiX, "Set ROI x");
     setInt(XI_PRM_OFFSET_Y, roiY, "Set ROI y");
 
-    // Read the parameters
+    // Read back the actual ROI
+    shared_ptr<vector<int>> actualROI = getROI();
+    // Tell the acquisitor that the image size changed
+    mp_acquisior->setImSize(actualROI.get()->at(0), actualROI.get()->at(1));
+
+    return actualROI;
+}
+
+std::shared_ptr<std::vector<int>> CamConfigurator::getROI()
+{
     int getW;
     int getH;
     int getX;
@@ -113,18 +122,15 @@ shared_ptr<vector<int>> CamConfigurator::setROI(int roiW, int roiH, int roiX, in
     getP(XI_PRM_OFFSET_Y, getY, XI_PRM_TYPE::xiTypeInteger, "Get ROI y");
     getP(XI_PRM_IMAGE_PAYLOAD_SIZE, getPayloadSize, XI_PRM_TYPE::xiTypeInteger, "Get payload size");
 
-    // Tell the acquisitr that the image size changed
-    mp_acquisior->setImSize(getW, getH);
-
     // Pack the result as a return value
-    shared_ptr<vector<int>> actualROI = shared_ptr<vector<int>>(new vector<int>());
-    actualROI.get()->push_back(getW);
-    actualROI.get()->push_back(getH);
-    actualROI.get()->push_back(getX);
-    actualROI.get()->push_back(getY);
-    actualROI.get()->push_back(getPayloadSize);
+    shared_ptr<vector<int>> roi = shared_ptr<vector<int>>(new vector<int>());
+    roi.get()->push_back(getW);
+    roi.get()->push_back(getH);
+    roi.get()->push_back(getX);
+    roi.get()->push_back(getY);
+    roi.get()->push_back(getPayloadSize);
 
-    return actualROI;
+    return roi;
 }
 
 bool CamConfigurator::setFreeRun()

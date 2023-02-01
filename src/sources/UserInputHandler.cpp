@@ -20,6 +20,7 @@ vector<userCmd> UserInputHandler::cmdList = {
     userCmd::CMD_SET_EXPOSURE,
     userCmd::CMD_SET_FPS,
     userCmd::CMD_SET_ROI,
+    userCmd::CMD_RESIZE_ROI,
 	userCmd::CMD_QUIT,
 };
 
@@ -31,6 +32,7 @@ map<string,userCmd> UserInputHandler::cmdStrings = {
     {"setExpos", userCmd::CMD_SET_EXPOSURE},
     {"setFPS", userCmd::CMD_SET_FPS},
     {"setROI", userCmd::CMD_SET_ROI},
+    {"resize", userCmd::CMD_RESIZE_ROI},
 	{"quit", userCmd::CMD_QUIT},
 };
 
@@ -42,6 +44,7 @@ map<userCmd,string> UserInputHandler::cmdHelp = {
     {userCmd::CMD_SET_EXPOSURE, "Sets the exposure time in microseconds"},
     {userCmd::CMD_SET_FPS, "Sets the framerate limit in frames per second; -1 = freerun"},
     {userCmd::CMD_SET_ROI, "Sets the region of interest in pixels"},
+    {userCmd::CMD_RESIZE_ROI, "Shifts a user defined border of the ROI by a chosen value"},
 	{userCmd::CMD_QUIT, "Quits the programm"},
 };
 
@@ -113,6 +116,9 @@ void UserInputHandler::handleInput(char* input)
             break;
         case userCmd::CMD_SET_ROI:
             execCmdSetROI(tokens);
+            break;
+        case userCmd::CMD_RESIZE_ROI:
+            execCmdSetResizeROI(tokens);
             break;
 		case userCmd::CMD_QUIT:
 			mRunning = false;
@@ -277,8 +283,6 @@ void UserInputHandler::execCmdSetROI(std::vector<std::string> args)
             int height = stoi(args.at(2));
             int offX = stoi(args.at(3));
             int offY = stoi(args.at(4));
-            //mvprintw(LINES-1, 0, "%d. %d. %d. %d. CAM: %d, %d, %d, %d", width, height, offX, offY, mp_camConf->getSensorWidth(), mp_camConf->getSensorHeight(), mp_camConf->getROIwidthIncrement(), mp_camConf->getROIheihtIncrement());
-            //return;
             if (width < mp_camConf->getROIwidthIncrement())
                 mvprintw(LINES-1, 0, "The width (1st arg) has to be at least %d.", mp_camConf->getROIwidthIncrement());
             else if (width > mp_camConf->getSensorWidth())
@@ -290,11 +294,11 @@ void UserInputHandler::execCmdSetROI(std::vector<std::string> args)
             else if (offX < 0)
                 mvprintw(LINES-1, 0, "The X-offset (3rd arg) has to be greater than 0.");
             else if (offX + width > mp_camConf->getSensorWidth())
-                mvprintw(LINES-1, 0, "The sum of the width (1st arg) and the offset (3rd arg) has to be less than %d.", mp_camConf->getSensorWidth());
+                mvprintw(LINES-1, 0, "The sum of the width (1st arg) and the X-offset (3rd arg) has to be less than %d.", mp_camConf->getSensorWidth());
             else if (offY < 0)
                 mvprintw(LINES-1, 0, "The Y-offset (4th arg) has to be greater than 0.");
-            else if (offY + width > mp_camConf->getSensorWidth())
-                mvprintw(LINES-1, 0, "The sum of the height (2st arg) and the offset (4th arg) has to be less than %d.", mp_camConf->getSensorHeight());
+            else if (offY + height > mp_camConf->getSensorWidth())
+                mvprintw(LINES-1, 0, "The sum of the height (2st arg) and the Y-offset (4th arg) has to be less than %d.", mp_camConf->getSensorHeight());
             else
             {
                 mp_acquisitor->pauseAcquisition();
@@ -320,6 +324,84 @@ void UserInputHandler::execCmdSetROI(std::vector<std::string> args)
         catch (std::invalid_argument e)
         {
             mvprintw(LINES-1, 0, "All four parameters must be integer values.");
+        }
+    }
+}
+
+void UserInputHandler::execCmdSetResizeROI(vector<string> args)
+{
+    clearResponseLine();
+    if (args.size() < 3)
+        mvprintw(LINES-1, 0, "Please indicate the border (either '-l', '-t', '-r' or '-b'), as well as the offset value in pixels");
+    else
+    {
+        try 
+        {
+            string direction = args.at(1);
+            int increment = stoi(args.at(2));
+
+            shared_ptr<vector<int>> newROI = mp_camConf->getROI();
+            if (direction == "-l")
+            {
+                newROI.get()->at(0) -= increment;
+                newROI.get()->at(2) += increment;
+            }
+            else if (direction == "-t")
+            {
+                newROI.get()->at(1) -= increment;
+                newROI.get()->at(3) += increment;
+            }
+            else if (direction == "-r")
+                newROI.get()->at(0) += increment;
+            else if (direction == "-b")
+                newROI.get()->at(1) += increment;
+            else
+            {
+                mvprintw(LINES-1, 0, "Please indicate the border to shift (either '-l', '-t', '-r' or '-b').");
+                return;
+            }
+
+            if (newROI.get()->at(0) < mp_camConf->getROIwidthIncrement())
+                mvprintw(LINES-1, 0, "The width has to be at least %d.", mp_camConf->getROIwidthIncrement());
+            else if (newROI.get()->at(0) > mp_camConf->getSensorWidth())
+                mvprintw(LINES-1, 0, "The width has to be smaller than %d.", mp_camConf->getSensorWidth());
+            else if (newROI.get()->at(1) < mp_camConf->getROIheihtIncrement())
+                mvprintw(LINES-1, 0, "The height has to be at least %d.", mp_camConf->getROIheihtIncrement());
+            else if (newROI.get()->at(1) > mp_camConf->getSensorHeight())
+                mvprintw(LINES-1, 0, "The height has to be smaller than %d.", mp_camConf->getSensorHeight());
+            else if (newROI.get()->at(2) < 0)
+                mvprintw(LINES-1, 0, "The X-offset has to be greater than 0.");
+            else if (newROI.get()->at(2) + newROI.get()->at(0) > mp_camConf->getSensorWidth())
+                mvprintw(LINES-1, 0, "The sum of the width and the X-offset has to be less than %d.", mp_camConf->getSensorWidth());
+            else if (newROI.get()->at(3) < 0)
+                mvprintw(LINES-1, 0, "The Y-offset has to be greater than 0.");
+            else if (newROI.get()->at(3) + newROI.get()->at(1) > mp_camConf->getSensorWidth())
+                mvprintw(LINES-1, 0, "The sum of the height and the Y-offset has to be less than %d.", mp_camConf->getSensorHeight());
+            else
+            {
+                mp_acquisitor->pauseAcquisition();
+                shared_ptr<vector<int>> actualROI = mp_camConf->setROI(newROI.get()->at(0), newROI.get()->at(1), newROI.get()->at(2), newROI.get()->at(3));
+                if (mp_camConf->error())
+                {
+                    string msg = mp_camConf->getErrorDescription();
+                    mvprintw(LINES-1, 0, "The camera did not accept the given ROI. It could be out of range. Error: %s", msg.c_str());
+                    mp_camConf->clearError();
+                }
+                else
+                {
+                    mp_acquisitor->resumeAcquisition();
+                    mvprintw(LINES-1, 0, "The exposure ROI has ben set to w=%d, h=%d, offX=%d, offY=%d, payload=%d bytes.",
+                        actualROI.get()->at(0),
+                        actualROI.get()->at(1),
+                        actualROI.get()->at(2),
+                        actualROI.get()->at(3),
+                        actualROI.get()->at(4));
+                }
+            }
+        }
+        catch (std::invalid_argument e)
+        {
+            mvprintw(LINES-1, 0, "The second argument must be an integer value.");
         }
     }
 }

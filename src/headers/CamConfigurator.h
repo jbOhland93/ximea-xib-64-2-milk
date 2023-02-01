@@ -21,7 +21,7 @@ class CamConfigurator
 
         float setExposureTime_us(float exposureTime_us);
         std::shared_ptr<std::vector<int>> setROI(int roiW, int roiH, int roiX, int roiY);
-
+        std::shared_ptr<std::vector<int>> getROI();
 
         // Sets the camera into freerun mode
         bool setFreeRun();
