@@ -5,6 +5,7 @@
 #include <memory>
 #include <m3api/xiApi.h>
 #include "../headers/Semaphore.h"
+#include "ImageProcessor.h"
 
 // A class that handles the acquisition of the camera
 class Acquisitor
@@ -38,13 +39,16 @@ class Acquisitor
         unsigned long long int m_framesAcquired = 0;
         // The current frames per second
         float m_FPS = 0.;
+        const ImageProcessor m_imProc;
 
         // Standard ctor, not to be used
         Acquisitor();
 
         // The acquisition loop, handling the raw acquisition of the camera.
         // This will be launched as separate thread.
-        void core();
+        // There are two versions: One handling the actual camera and one dummy.
+        void coreXI();
+        void coreDummy();
 };
 
 #endif // ACQUISITOR_H

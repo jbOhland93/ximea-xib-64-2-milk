@@ -8,45 +8,13 @@
 
 #include "headers/global.h"
 
-#ifndef __cplusplus
-    #define __cplusplus
-#endif
 
-// Include ISIO headers
-#include "ImageStreamIO.h"
-#include "ImageStruct.h"
 
 using namespace std;
 
 Acquisitor::Acquisitor(HANDLE &cameraHandle)
     : m_cameraHandle(cameraHandle)
 {
-    init_ImageStreamIO();
-
-    IMAGE image;
-    string name = "my_c++_steam";
-    char * streamname = (char*)"my_c++_steam";
-    int naxis = 2;
-    int width = 2;
-    int height = 2;
-    uint32_t * imsize = new uint32_t[naxis]();
-    imsize[0] = width;
-    imsize[1] = height;
-    uint8_t atype = _DATATYPE_UINT8;
-    // image will be in shared memory
-    int shared = 1;
-    // allocate space for keywords
-    int NBkw = 50;
-    #ifdef _IMAGESTREAMIO_H
-        ImageStreamIO_createIm(&image,
-                                streamname,
-                                naxis,
-                                imsize,
-                                atype, // called atype
-                                shared,
-                                NBkw,
-                                10);
-    #endif
 }
 
 bool Acquisitor::startAcquisition()
@@ -55,7 +23,10 @@ bool Acquisitor::startAcquisition()
     {
         mp_acqSem->acquire();
         mp_acqStartSem->acquire();
-        m_acqThread = thread(&Acquisitor::core, this);
+        if (projectflags::USE_CAM)
+            m_acqThread = thread(&Acquisitor::coreXI, this);
+        else
+            m_acqThread = thread(&Acquisitor::coreDummy, this);
         mp_acqStartSem->acquire(); // Wait until the thread has decreased this semaphore!
         mp_acqStartSem->release();
         return true;
@@ -89,12 +60,11 @@ float Acquisitor::getFPS()
     return m_FPS;
 }
 
-void Acquisitor::core()
+void Acquisitor::coreXI()
 {
-    struct timespec last, now;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &last);
     unsigned long long int lastFramecount = m_framesAcquired;
-    double timediff_ns = -1.;
+    DWORD lastSecond = 0;
+    DWORD lastUSecond = 0;
     // image buffer
     XI_IMG image;
     memset(&image,0,sizeof(image));
@@ -102,39 +72,64 @@ void Acquisitor::core()
 
     
     XI_RETURN stat = XI_OK;
-    if (projectflags::USE_CAM)
-        stat = xiStartAcquisition(m_cameraHandle);
+    stat = xiStartAcquisition(m_cameraHandle);
     mp_acqStartSem->release();
     if (stat == XI_OK)
     {
         while (isAcquiring())
         {
             // getting image from camera
-            if (projectflags::USE_CAM)
-                stat = xiGetImage(m_cameraHandle, 5000, &image);
-            else
-                // Sleep for a ms to limit the frame rate if not camera is used
-                this_thread::sleep_for(chrono::milliseconds(1));
+            stat = xiGetImage(m_cameraHandle, 5000, &image);
             if (stat == XI_OK)
             {
                 // Successfully acquired frame!
+                    // ToDo: Push frame to image processor
+                // Do logging, determine FPS etc ...
                 m_framesAcquired++; // Increase frame count
-                clock_gettime(CLOCK_MONOTONIC_RAW, &now); // Get timestamp to calculate framerate
-                timediff_ns = now.tv_nsec - last.tv_nsec + (now.tv_sec-last.tv_sec)*1e9;
-                if (timediff_ns > 1e9)
-                {   // One second elapsed since last framerate update. Do update now.
-                    m_FPS = (m_framesAcquired-lastFramecount)/((now.tv_nsec - last.tv_nsec + (now.tv_sec-last.tv_sec)*1e9)/1.e9);
+                if (lastSecond != image.tsSec)
+                {
+                    m_FPS = (m_framesAcquired - lastFramecount)*1.e6/(image.tsUSec+1.e6 - lastUSecond);
+                    lastSecond = image.tsSec;
+                    lastUSecond = image.tsUSec;
                     lastFramecount = m_framesAcquired;
-                    last = now;
                 }
-                if (projectflags::USE_CAM)
-                    unsigned char pixel = *(unsigned char*)image.bp;
+                //unsigned char pixel = *(unsigned char*)image.bp;
                 //printf("Image %lld (%dx%d) received from camera. First pixel value: %d\n", m_framesAcquired, (int)image.width, (int)image.height, pixel);
             }
             else
                 stopAcquisition();
         }
     }
+    m_FPS = 0;
+
+    if (projectflags::USE_CAM)
+        xiStopAcquisition(m_cameraHandle);
+}
+
+void Acquisitor::coreDummy()
+{
+    struct timespec last, now;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &last);
+    unsigned long long int lastFramecount = m_framesAcquired;
+    double timediff_ns = -1.;
+
+    mp_acqStartSem->release();
+    while (isAcquiring())
+    {
+        // getting image from camera (i.e. wait a moment in this dummy case)
+        this_thread::sleep_for(chrono::milliseconds(1));
+        // Do logging, determine FPS etc ...
+        m_framesAcquired++; // Increase frame count
+        clock_gettime(CLOCK_MONOTONIC_RAW, &now); // Get timestamp to calculate framerate
+        timediff_ns = now.tv_nsec - last.tv_nsec + (now.tv_sec-last.tv_sec)*1e9;
+        if (timediff_ns > 1e9)
+        {   // One second elapsed since last framerate update. Do update now.
+            m_FPS = (m_framesAcquired-lastFramecount)/((now.tv_nsec - last.tv_nsec + (now.tv_sec-last.tv_sec)*1e9)/1.e9);
+            lastFramecount = m_framesAcquired;
+            last = now;
+        }
+    }
+    
     m_FPS = 0;
 
     if (projectflags::USE_CAM)
