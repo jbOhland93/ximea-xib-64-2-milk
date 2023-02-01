@@ -49,7 +49,7 @@ CPPFLAGS := $(CPPFLAGS) $(INC_FLAGS) $(EXT_INC_DIRS) -MMD -MP
 # Extended by an automatic run if $(AUTORUN_AFTER_BUILD) equals true
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 	$(CXX) $(OBJS) -o $@ $(LDFLAGS)
-	@ln -s ${MILK_INSTALLDIR}/lib/libImageStreamIO.so build/libImageStreamIO.so
+	@if [ ! -f build/libImageStreamIO.so ]; then ln -s ${MILK_INSTALLDIR}/lib/libImageStreamIO.so build/libImageStreamIO.so; fi
 ifeq ($(AUTORUN_AFTER_BUILD), true)
 	@echo "\n\n=== Execute application ===\n"
 	@make run | grep -v make
