@@ -1,6 +1,7 @@
 #ifndef CAMCONFIGURATOR_H
 #define CAMCONFIGURATOR_H
 
+#include <vector>
 #include <memory>
 #include <m3api/xiApi.h>
 #include "Acquisitor.h"
@@ -12,7 +13,19 @@ class CamConfigurator
         // Ctor, taking the camera handle and the acquisitor
         CamConfigurator(HANDLE& cameraHandle, std::shared_ptr<Acquisitor> acq);
 
+        // Get the sensor data
+        int getSensorWidth();
+        int getSensorHeight();
+        int getROIwidthIncrement();
+        int getROIheihtIncrement();
+
         float setExposureTime_us(float exposureTime_us);
+        std::shared_ptr<std::vector<int>> setROI(int roiW, int roiH, int roiX, int roiY);
+
+        // Sets the camera into freerun mode
+        bool setFreeRun();
+        // Sets a limit to the cameras framerate
+        float setFrameRateLimit(float fps_limit);
 
         // Returns true if an error is present
         bool error();

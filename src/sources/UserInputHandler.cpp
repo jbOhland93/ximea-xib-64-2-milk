@@ -18,6 +18,8 @@ vector<userCmd> UserInputHandler::cmdList = {
 	userCmd::CMD_STOP_ACQ,
     userCmd::CMD_GET_FPS,
     userCmd::CMD_SET_EXPOSURE,
+    userCmd::CMD_SET_FPS,
+    userCmd::CMD_SET_ROI,
 	userCmd::CMD_QUIT,
 };
 
@@ -27,6 +29,8 @@ map<string,userCmd> UserInputHandler::cmdStrings = {
     {"stop", userCmd::CMD_STOP_ACQ},
     {"fps", userCmd::CMD_GET_FPS},
     {"setExpos", userCmd::CMD_SET_EXPOSURE},
+    {"setFPS", userCmd::CMD_SET_FPS},
+    {"setROI", userCmd::CMD_SET_ROI},
 	{"quit", userCmd::CMD_QUIT},
 };
 
@@ -36,6 +40,8 @@ map<userCmd,string> UserInputHandler::cmdHelp = {
     {userCmd::CMD_STOP_ACQ, "Stops the camera acquisition"},
     {userCmd::CMD_GET_FPS, "Prints the current estimated framerate"},
     {userCmd::CMD_SET_EXPOSURE, "Sets the exposure time in microseconds"},
+    {userCmd::CMD_SET_FPS, "Sets the framerate limit in frames per second; -1 = freerun"},
+    {userCmd::CMD_SET_ROI, "Sets the region of interest in pixels"},
 	{userCmd::CMD_QUIT, "Quits the programm"},
 };
 
@@ -101,6 +107,12 @@ void UserInputHandler::handleInput(char* input)
             break;
         case userCmd::CMD_SET_EXPOSURE:
             execCmdSetExposure(tokens);
+            break;
+        case userCmd::CMD_SET_FPS:
+            execCmdSetFPS(tokens);
+            break;
+        case userCmd::CMD_SET_ROI:
+            execCmdSetROI(tokens);
             break;
 		case userCmd::CMD_QUIT:
 			mRunning = false;
@@ -204,6 +216,105 @@ void UserInputHandler::execCmdSetExposure(std::vector<std::string> args)
         catch (std::invalid_argument e)
         {
             mvprintw(LINES-1, 0, "The first parameter must be a numerical value.");
+        }
+    }
+}
+
+void UserInputHandler::execCmdSetFPS(std::vector<std::string> args)
+{
+    clearResponseLine();
+    if (args.size() < 2)
+        mvprintw(LINES-1, 0, "Please add the desired frame rate frames per second.");
+    else
+    {
+        try 
+        {
+            float fps = stof(args.at(1));
+            if (fps < 0)
+            {
+                bool freeRun = mp_camConf->setFreeRun();
+                if (!freeRun)
+                {
+                    string msg = mp_camConf->getErrorDescription();
+                    mvprintw(LINES-1, 0, "The camera did not switch to freerun mode. Error: %s", msg.c_str());
+                    mp_camConf->clearError();
+                }
+                else
+                    mvprintw(LINES-1, 0, "The camera has been set to freerun mode.");
+            }
+            else if (fps < 0.8)
+                mvprintw(LINES-1, 0, "The minimum framerate is 0.8 Hz. Values smaller than 0 will trigger the free run mode");
+            else
+            {
+                float setFPS = mp_camConf->setFrameRateLimit(fps);
+                if (setFPS == -1)
+                {
+                    string msg = mp_camConf->getErrorDescription();
+                    mvprintw(LINES-1, 0, "The camera did not accept the given frame rate limit of %.3f. It could be out of range. Error: %s", setFPS, msg.c_str());
+                    mp_camConf->clearError();
+                }
+                else
+                    mvprintw(LINES-1, 0, "The frame rate limit has ben set to %.3f us.", setFPS);
+            }
+        }
+        catch (std::invalid_argument e)
+        {
+            mvprintw(LINES-1, 0, "The first parameter must be a numerical value.");
+        }
+    }
+}
+
+void UserInputHandler::execCmdSetROI(std::vector<std::string> args)
+{
+    clearResponseLine();
+    if (args.size() < 4)
+        mvprintw(LINES-1, 0, "Please add the width, height, X- and Y-offset.");
+    else
+    {
+        try 
+        {
+            int width = stoi(args.at(1));
+            int height = stoi(args.at(2));
+            int offX = stoi(args.at(3));
+            int offY = stoi(args.at(4));
+            //mvprintw(LINES-1, 0, "%d. %d. %d. %d. CAM: %d, %d, %d, %d", width, height, offX, offY, mp_camConf->getSensorWidth(), mp_camConf->getSensorHeight(), mp_camConf->getROIwidthIncrement(), mp_camConf->getROIheihtIncrement());
+            //return;
+            if (width < mp_camConf->getROIwidthIncrement())
+                mvprintw(LINES-1, 0, "The width (1st arg) has to be at least %d.", mp_camConf->getROIwidthIncrement());
+            else if (width > mp_camConf->getSensorWidth())
+                mvprintw(LINES-1, 0, "The width (1st arg) has to be smaller than %d.", mp_camConf->getSensorWidth());
+            else if (height < mp_camConf->getROIheihtIncrement())
+                mvprintw(LINES-1, 0, "The height (2nd arg) has to be at least %d.", mp_camConf->getROIheihtIncrement());
+            else if (height > mp_camConf->getSensorHeight())
+                mvprintw(LINES-1, 0, "The height (2nd arg) has to be smaller than %d.", mp_camConf->getSensorHeight());
+            else if (offX < 0)
+                mvprintw(LINES-1, 0, "The X-offset (3rd arg) has to be greater than 0.");
+            else if (offX + width > mp_camConf->getSensorWidth())
+                mvprintw(LINES-1, 0, "The sum of the width (1st arg) and the offset (3rd arg) has to be less than %d.", mp_camConf->getSensorWidth());
+            else if (offY < 0)
+                mvprintw(LINES-1, 0, "The Y-offset (4th arg) has to be greater than 0.");
+            else if (offY + width > mp_camConf->getSensorWidth())
+                mvprintw(LINES-1, 0, "The sum of the height (2st arg) and the offset (4th arg) has to be less than %d.", mp_camConf->getSensorHeight());
+            else
+            {
+                shared_ptr<vector<int>> actualROI = mp_camConf->setROI(width, height, offX, offY);
+                if (mp_camConf->error())
+                {
+                    string msg = mp_camConf->getErrorDescription();
+                    mvprintw(LINES-1, 0, "The camera did not accept the given ROI. It could be out of range. Error: %s", msg.c_str());
+                    mp_camConf->clearError();
+                }
+                else
+                    mvprintw(LINES-1, 0, "The exposure ROI has ben set to w=%d, h=%d, offX=%d, offY=%d.",
+                        actualROI.get()->at(0),
+                        actualROI.get()->at(1),
+                        actualROI.get()->at(2),
+                        actualROI.get()->at(3));
+            }
+        }
+        catch (std::invalid_argument e)
+        {
+            mvprintw(LINES-1, 0, "All four parameters must be integer values.");
         }
     }
 }

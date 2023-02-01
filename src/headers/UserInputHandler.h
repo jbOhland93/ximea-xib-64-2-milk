@@ -14,6 +14,8 @@ enum class userCmd{
 	CMD_STOP_ACQ,
 	CMD_GET_FPS,
 	CMD_SET_EXPOSURE,
+	CMD_SET_FPS,
+	CMD_SET_ROI,
 	CMD_QUIT
 };
 
@@ -58,6 +60,10 @@ class UserInputHandler
 		void execCmdPrintFPS();
 		// Sets the exposure
 		void execCmdSetExposure(std::vector<std::string> args);
+		// Sets the frame rate limit
+		void execCmdSetFPS(std::vector<std::string> args);
+		// Sets the roi
+		void execCmdSetROI(std::vector<std::string> args);
 		
 		// === Print methods ===
 		// Clears the print area
