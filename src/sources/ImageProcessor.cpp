@@ -47,13 +47,16 @@ void ImageProcessor::initializeStream(int width, int height)
     int shared = 1; // image will be in shared memory
     int NBkw = 0; // No keywords for now. Do this later.
     int circBufSize = 10;
-    ImageStreamIO_createIm(&m_image,
+    ImageStreamIO_createIm_gpu(&m_image,
                             mp_streamname,
                             naxis,
                             imsize,
-                            atype, // called atype
+                            atype,
+                            -1, // -1 = Host, >=0 = device
                             shared,
+                            10,
                             NBkw,
+                            MATH_DATA,
                             circBufSize);
     delete imsize;
 }

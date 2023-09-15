@@ -1,4 +1,4 @@
-#include "../headers/UserInputHandler.h"
+#include "UserInputHandler.h"
 
 #include <ncurses.h>
 //#include <cstring>
@@ -57,7 +57,7 @@ void UserInputHandler::core()
 {
     initscr();
     wmove(stdscr, 0, 0);
-    addstr("=== Welcome to our WIP CLI. ===\n");
+    addstr("=== Welcome to the CLI of the XIMEA-xiB-64-2-milk application. ===\n");
     addstr("\nEnter any string and hit enter to display the response.\n");
     addstr("Enter \"quit\" to exit the CLI.\n");
     addstr("Enter \"help\" for a list of comand options.\n\n");
@@ -260,7 +260,7 @@ void UserInputHandler::execCmdSetFPS(std::vector<std::string> args)
                     mp_camConf->clearError();
                 }
                 else
-                    mvprintw(LINES-1, 0, "The frame rate limit has ben set to %.3f us.", setFPS);
+                    mvprintw(LINES-1, 0, "The frame rate limit has ben set to %.3f Hz.", setFPS);
             }
         }
         catch (std::invalid_argument e)

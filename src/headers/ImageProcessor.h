@@ -29,7 +29,7 @@ class ImageProcessor
         // Posts the semaphores and increases the circular buffer
         void updateImage();
     private:
-        char * mp_streamname = (char*)"ximea-cam";
+        char * mp_streamname = (char*)"ximeaCam";
         IMAGE m_image;
         int m_width;
         int m_height;
