@@ -56,7 +56,10 @@ int main()
 
 int connectToCamera(HANDLE& cameraHandle)
 {
-    printf("Starting API.\nExpect some errors due to properties missing on this camera model.\n\n");
+    printf("Starting API.\n");
+    printf("Some xiAPI errors are expected, but can be ignored: ");
+    printf("the API searches for camera properties of all models, ");
+    printf("not all of which are supported by this model.\n\n");
     XI_RETURN stat = XI_OK;
     stat = xiOpenDevice(0, &cameraHandle);
     if (stat != XI_OK)

@@ -1,8 +1,7 @@
 # Useful: https://makefiletutorial.com/
 
-# the compilers: CC = c-files, CXX = c++ files
-CC := nvcc
-CXX := nvcc
+# the compiler - we only use cpp files, so only use g++.
+CXX := g++
 # compiler flags:
 #	-g	- this flag adds debugging information to the executable file
 CPPFLAGS := -g 
@@ -11,7 +10,7 @@ EXT_LIB_DIRS := -L${MILK_INSTALLDIR}/lib/
 #	-lcurses			- ncurses library for CLI
 #	-lm3api				- xiAPI for interfacing with the camera
 #	-lImageStreamIO		- Interfacing with milk data streams
-LDFLAGS := $(EXT_LIB_DIRS) -lncurses -lm3api -lImageStreamIO
+LDFLAGS := $(EXT_LIB_DIRS) -lncurses -lm3api -lImageStreamIO -lpthread
 EXT_INC_DIRS := -I${MILK_INSTALLDIR}/include/ImageStreamIO/
 
 AUTORUN_AFTER_BUILD := false
@@ -24,11 +23,11 @@ TARGET_EXEC := xiB-64-2-milk
 BUILD_DIR := ./build
 SRC_DIRS := ./src
 
-# Find all the C and C++ files we want to compile
-# Note the single quotes around the * expressions. Make will incorrectly expand these otherwise.
-SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' -or -name '*.c' -or -name '*.s')
+# Find all the C++ files we want to compile
+# Note the single quotes around the * expression. Make will incorrectly expand these otherwise.
+SRCS := $(shell find $(SRC_DIRS) -name '*.cpp')
 
-# String substitution for every C/C++ file.
+# String substitution for every C++ file.
 # As an example, hello.cpp turns into ./build/hello.cpp.o
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 
@@ -47,6 +46,7 @@ CPPFLAGS := $(CPPFLAGS) $(INC_FLAGS) $(EXT_INC_DIRS) -MMD -MP
 
 # The final build step.
 # Extended by an automatic run if $(AUTORUN_AFTER_BUILD) equals true
+# Also, create a softlink to the ImageStreamIO shared library
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 	$(CXX) $(OBJS) -o $@ $(LDFLAGS)
 	@if [ ! -f build/libImageStreamIO.so ]; then ln -s ${MILK_INSTALLDIR}/lib/libImageStreamIO.so build/libImageStreamIO.so; fi
@@ -56,12 +56,6 @@ ifeq ($(AUTORUN_AFTER_BUILD), true)
 else
 	@echo "\n\nBuild finished. Autorun deactivated."
 endif
-	
-
-# Build step for C source
-$(BUILD_DIR)/%.c.o: %.c
-	mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 # Build step for C++ source
 $(BUILD_DIR)/%.cpp.o: %.cpp
