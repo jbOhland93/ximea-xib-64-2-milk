@@ -44,11 +44,8 @@ void ImageProcessor::initializeStream(int width, int height)
     if (mp_image != nullptr)
         ImageStreamIO_closeIm(mp_image);
     else
-    {
         mp_image = new IMAGE;
-        errno_t err = ImageStreamIO_openIm(mp_image, mp_streamname);
-        ImageStreamIO_closeIm(mp_image);
-    }
+
     int naxis = 2;
     uint32_t * imsize = new uint32_t[naxis]();
     imsize[0] = width;
