@@ -10,14 +10,16 @@ ImageProcessor::~ImageProcessor()
 {
     // This does not work, for some reason ...
     // The stream still apears in milk-streamCTRL.
-    ImageStreamIO_closeIm(&m_image);
+    if (mp_image != nullptr)
+    {
+        ImageStreamIO_closeIm(mp_image);
+        delete mp_image;
+    }
 }
 
 void *ImageProcessor::getBufferPtr()
 {
-    void* bufferPointer;
-    ImageStreamIO_writeBuffer(&m_image, &bufferPointer);
-    return bufferPointer;
+    return ImageStreamIO_get_image_d_ptr(mp_image);
 }
 
 int ImageProcessor::getPayloadSize()
@@ -27,7 +29,7 @@ int ImageProcessor::getPayloadSize()
 
 void ImageProcessor::updateImage()
 {
-    ImageStreamIO_UpdateIm(&m_image);
+    ImageStreamIO_UpdateIm(mp_image);
 }
 
 void ImageProcessor::setImSize(int width, int height)
@@ -39,6 +41,14 @@ void ImageProcessor::setImSize(int width, int height)
 
 void ImageProcessor::initializeStream(int width, int height)
 {
+    if (mp_image != nullptr)
+        ImageStreamIO_closeIm(mp_image);
+    else
+    {
+        mp_image = new IMAGE;
+        errno_t err = ImageStreamIO_openIm(mp_image, mp_streamname);
+        ImageStreamIO_closeIm(mp_image);
+    }
     int naxis = 2;
     uint32_t * imsize = new uint32_t[naxis]();
     imsize[0] = width;
@@ -47,7 +57,7 @@ void ImageProcessor::initializeStream(int width, int height)
     int shared = 1; // image will be in shared memory
     int NBkw = 0; // No keywords for now. Do this later.
     int circBufSize = 10;
-    ImageStreamIO_createIm_gpu(&m_image,
+    ImageStreamIO_createIm_gpu(mp_image,
                             mp_streamname,
                             naxis,
                             imsize,

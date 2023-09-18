@@ -30,7 +30,7 @@ class ImageProcessor
         void updateImage();
     private:
         char * mp_streamname = (char*)"ximeaCam";
-        IMAGE m_image;
+        IMAGE* mp_image = nullptr;
         int m_width;
         int m_height;
 
