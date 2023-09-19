@@ -17,6 +17,6 @@ https://github.com/milk-org/milk
 
 | terminal command | Description |
 | ------ | ------ |
-| `make` | Builds the software and executes it automatically. Change the "AUTORUN_AFTER_BUILD" value in the makefile to false to avoid this. |
+| `make` | Builds the software. Change the "AUTORUN_AFTER_BUILD" value in the makefile to true if the built programm shall be executed automatically. |
 | `make clean` | Deletes the build directory. |
 | `make run` | Builds and executes the software after it has already been built. Shortcut for `./build/xiB-64-2-milk` |
