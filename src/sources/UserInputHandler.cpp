@@ -90,6 +90,8 @@ void UserInputHandler::handleInput(char* input)
 {
     istringstream iss(input);
     vector<string> tokens{istream_iterator<string>{iss}, istream_iterator<string>{}};
+    if (tokens.size() == 0)
+        return; // Empty command string - perhaps user pressed enter.
     string cmd = tokens.at(0);
 
 	if (cmdStrings.find(cmd) == cmdStrings.end()) {
