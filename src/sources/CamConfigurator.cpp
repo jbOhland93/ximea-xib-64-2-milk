@@ -39,7 +39,7 @@ CamConfigurator::CamConfigurator(HANDLE &cameraHandle, std::shared_ptr<Acquisito
     setExposureTime_us(1e6/7500.);
 
     // Set default ROI
-    int roiSize = 400;
+    int roiSize = 434;
     setROI(roiSize, roiSize, (m_width - roiSize)/2, (m_height - roiSize)/2);
 }
 
