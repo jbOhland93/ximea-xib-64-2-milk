@@ -25,3 +25,6 @@ https://github.com/milk-org/milk
 | `make` | Builds the software. Change the "AUTORUN_AFTER_BUILD" value in the makefile to true if the built program shall be executed automatically. |
 | `make clean` | Deletes the build directory. |
 | `make run` | Builds and executes the software after it has already been built. Shortcut for `./build/xiB-64-2-milk` |
+
+After building, export the build directory to the environmental variables:
+``export XIMEA_TO_MILK_PATH=<path-to-repository>/build/``
