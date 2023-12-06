@@ -65,5 +65,5 @@ void ImageProcessor::initializeStream(int width, int height)
                             NBkw,
                             MATH_DATA,
                             circBufSize);
-    delete imsize;
+    delete[] imsize;
 }
