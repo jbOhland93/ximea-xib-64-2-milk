@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <m3api/xiApi.h>
+#include <string>
 #include "Acquisitor.h"
 
 // A class that handles the acquisition of the camera
